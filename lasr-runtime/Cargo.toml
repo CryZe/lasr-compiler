@@ -1,0 +1,11 @@
+[package]
+name = "lasr-runtime"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+asr = { git = "https://github.com/LiveSplit/asr", features = ["alloc"] }
+tsuki = "0.4.7"
+
+[lib]
+crate-type = ["cdylib"]

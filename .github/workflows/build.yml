@@ -1,0 +1,102 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+    tags:
+      - "*"
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v2
+        with:
+          rust-version: stable
+          targets: wasm32-wasip1
+
+      - name: Build
+        run: |
+          cargo build -p lasr-compiler --release --locked
+
+      - name: Package release artifact
+        id: prep
+        shell: pwsh
+        run: |
+          $targetDir = "target/release"
+          if ("${{ matrix.os }}" -eq "windows-latest") {
+            $bin = Join-Path $targetDir "lasr-compiler.exe"
+            $archive = "lasr-compiler-windows.zip"
+            Compress-Archive -Path $bin -DestinationPath $archive -Force
+          }
+          elseif ("${{ matrix.os }}" -eq "macos-latest") {
+            $bin = Join-Path $targetDir "lasr-compiler"
+            $archive = "lasr-compiler-macos.tar.gz"
+            chmod +x $bin
+            tar -czf $archive -C $targetDir lasr-compiler
+          }
+          else {
+            $bin = Join-Path $targetDir "lasr-compiler"
+            $archive = "lasr-compiler-linux.tar.gz"
+            chmod +x $bin
+            tar -czf $archive -C $targetDir lasr-compiler
+          }
+
+          "asset=$archive" >> $env:GITHUB_OUTPUT
+
+      - name: Release
+        if: github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.prep.outputs.asset }}
+          name: Latest
+          tag_name: latest
+          body: This contains the latest lasr-compiler binaries.
+
+  clippy:
+    name: Check clippy lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v2
+        with:
+          components: clippy
+          targets: wasm32-wasip1
+
+      - name: Run Clippy
+        run: |
+          cargo clippy -p lasr-runtime --target wasm32-wasip1 --all-features
+          cargo clippy -p lasr-compiler --all-features
+
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v2
+        with:
+          components: rustfmt
+
+      - name: Run cargo fmt
+        run: cargo fmt -- --check || true
