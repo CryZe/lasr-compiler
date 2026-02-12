@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "lasr-runtime",
+    "lasr-compiler",
+]
+default-members = [
+    "lasr-compiler",
+]
+
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true
+
+[profile.release.build-override]
+opt-level = 0
