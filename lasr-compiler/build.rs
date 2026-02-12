@@ -2,7 +2,9 @@ use std::{env, fs, path::PathBuf, process::Command};
 
 fn main() {
     println!("cargo:rerun-if-changed=../lasr-runtime/Cargo.toml");
-    println!("cargo:rerun-if-changed=../lasr-runtime/src/lib.rs");
+    for file in runtime_source_files() {
+        println!("cargo:rerun-if-changed={}", file.display());
+    }
 
     let manifest_dir =
         PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("missing CARGO_MANIFEST_DIR"));
@@ -37,4 +39,23 @@ fn main() {
     let staged_wasm = out_dir.join("lasr_runtime.wasm");
 
     fs::copy(&built_wasm, &staged_wasm).expect("failed to stage lasr_runtime.wasm into OUT_DIR");
+}
+
+fn runtime_source_files() -> Vec<PathBuf> {
+    let runtime_src = PathBuf::from("../lasr-runtime/src");
+    let mut files = Vec::new();
+    collect_files(&runtime_src, &mut files);
+    files
+}
+
+fn collect_files(dir: &PathBuf, files: &mut Vec<PathBuf>) {
+    let entries = fs::read_dir(dir).expect("failed to read runtime source directory");
+    for entry in entries {
+        let path = entry.expect("failed to read runtime source entry").path();
+        if path.is_dir() {
+            collect_files(&path, files);
+        } else if path.is_file() {
+            files.push(path);
+        }
+    }
 }

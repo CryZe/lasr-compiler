@@ -48,16 +48,19 @@ Lua globals / host functions:
 - `readAddress`
 - `getPID`
 - `print`
+- `print_tbl`
 - `sig_scan`
 - `getBaseAddress`
 - `sizeOf`
 - `getModuleSize`
 - `getMaps`
+- `shallow_copy_tbl`
 
 Script settings used by the runtime loop:
 
 - `refreshRate`
 - `useGameTime`
+- `mapsCacheCycles`
 
 Exclusive features of the Auto Splitting Runtime:
 
@@ -66,8 +69,7 @@ Exclusive features of the Auto Splitting Runtime:
 
 Known differences and gaps:
 
-- `mapsCacheCycles` (documented as experimental) is ignored, because the Auto
-  Splitting Runtime doesn't give direct control over map caching.
+- `process` currently ignores the `sort` argument.
 - `getPID` currently returns a dummy value (`0`) because the Auto Splitting
   Runtime does not implement process ID retrieval.
 - `getMaps` currently returns an empty `name` field for each map because the
@@ -98,12 +100,4 @@ Build runtime only (not usually necessary):
 ```sh
 cargo build -p lasr-runtime --target wasm32-wasip1
 ```
-
-### Workspace
-
-- `lasr-runtime`: Lua-based autosplitting runtime compiled for `wasm32-wasip1`
-- `lasr-compiler`: script compiler/injector that outputs a final runtime wasm
-
-`lasr-compiler` embeds the runtime wasm via `build.rs`, so building/running the compiler
-also builds `lasr-runtime` (release, `wasm32-wasip1`) as an input artifact.
 
