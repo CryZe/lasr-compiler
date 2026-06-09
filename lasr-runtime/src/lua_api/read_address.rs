@@ -9,11 +9,26 @@ use tsuki::{
 use crate::state::{Result, State};
 
 pub fn read_address(cx: Context<State, Args>) -> Result<Context<State, Ret>> {
+    if cx.args() == 0 {
+        asr::print_message(
+            "[readAddress] Two arguments are required: type and address. Check your auto splitter code.",
+        );
+        cx.push(Value::Nil)?;
+        return Ok(cx.into());
+    }
+
     let ty_arg = cx.arg(1);
-    let ty = ty_arg
-        .to_str()?
+    let Some(ty_str) = ty_arg.as_str(false) else {
+        asr::print_message(
+            "[readAddress] The type to be read must be a string. Check your auto splitter code.",
+        );
+        cx.push(Value::Nil)?;
+        return Ok(cx.into());
+    };
+
+    let ty = ty_str
         .as_utf8()
-        .ok_or_else(|| ty_arg.error("type is not valid UTF-8"))?;
+        .ok_or_else(|| ty_arg.error("type argument is not valid UTF-8"))?;
 
     let value = {
         let process = &*cx.associated_data().process.borrow();

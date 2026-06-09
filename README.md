@@ -31,6 +31,8 @@ lasr-compiler script.lua [script.wasm]
 
 ## Compatibility
 
+The current compatibility target is LibreSplit commit [eb95cea](https://github.com/LibreSplit/LibreSplit/commit/eb95cea).
+
 Callback lifecycle:
 
 - `startup`
@@ -45,6 +47,7 @@ Callback lifecycle:
 Lua globals / host functions:
 
 - `process`
+- `cmdline`
 - `readAddress`
 - `getPID`
 - `print`
@@ -54,7 +57,9 @@ Lua globals / host functions:
 - `sizeOf`
 - `getModuleSize`
 - `getMaps`
+- `str2ida`
 - `shallow_copy_tbl`
+- `md5sum`
 
 Script settings used by the runtime loop:
 
@@ -69,7 +74,8 @@ Exclusive features of the Auto Splitting Runtime:
 
 Known differences and gaps:
 
-- `process` currently ignores the `sort` argument.
+- `cmdline` currently falls back to executable-name matching. The Auto
+  Splitting Runtime does not expose full command-line process matching.
 - `getPID` currently returns a dummy value (`0`) because the Auto Splitting
   Runtime does not implement process ID retrieval.
 - `getMaps` currently returns an empty `name` field for each map because the

@@ -25,8 +25,8 @@ mod state;
 mod utils;
 
 use lua_api::{
-    get_base_address, get_maps, get_module_size, get_pid, print, print_tbl, process, read_address,
-    set_variable, shallow_copy_tbl, sig_scan, size_of,
+    cmdline, get_base_address, get_maps, get_module_size, get_pid, md5sum, print, print_tbl,
+    process, read_address, set_variable, shallow_copy_tbl, sig_scan, size_of, str2ida,
 };
 use luajit_bitlib::LuaJitBitLib;
 use script::script_str;
@@ -61,6 +61,7 @@ async fn main() {
         lua.use_module(None, true, Utf8Lib).unwrap();
 
         lua.global().set_str_key("process", fp!(process as async));
+        lua.global().set_str_key("cmdline", fp!(cmdline as async));
         lua.global().set_str_key("readAddress", fp!(read_address));
         lua.global().set_str_key("getPID", fp!(get_pid));
         lua.global().set_str_key("print", fp!(print));
@@ -72,8 +73,10 @@ async fn main() {
             .set_str_key("getModuleSize", fp!(get_module_size));
         lua.global().set_str_key("getMaps", fp!(get_maps));
         lua.global().set_str_key("print_tbl", fp!(print_tbl));
+        lua.global().set_str_key("str2ida", fp!(str2ida));
         lua.global()
             .set_str_key("shallow_copy_tbl", fp!(shallow_copy_tbl));
+        lua.global().set_str_key("md5sum", fp!(md5sum));
 
         lua.global().set_str_key("setVariable", fp!(set_variable));
 
@@ -127,8 +130,9 @@ async fn main() {
                 None => {}
             }
 
-            // I feel like this should also check the timer state.
-            if let Some(true) = call_maybe_bool(&lua, &td, "reset").await {
+            if let TimerState::Running | TimerState::Paused = timer_state
+                && let Some(true) = call_maybe_bool(&lua, &td, "reset").await
+            {
                 timer::reset();
             }
 
