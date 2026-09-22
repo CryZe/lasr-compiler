@@ -139,7 +139,7 @@ pub fn read_address(cx: Context<State, Args>) -> Result<Context<State, Ret>> {
                     _ => {
                         if let Some(rem) = ty.strip_prefix("string") {
                             match rem.parse::<usize>() {
-                                Ok(byte_count) if byte_count >= 2 => {
+                                Ok(byte_count) if (2..=10000).contains(&byte_count) => {
                                     let mut buf = vec![0; byte_count];
                                     if process.read_into_buf(address, &mut buf).is_err() {
                                         asr::print_message(

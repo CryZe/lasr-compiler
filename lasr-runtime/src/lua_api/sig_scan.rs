@@ -54,6 +54,9 @@ fn parse_signature(pattern: &str) -> Result<Vec<SigByte>, &'static str> {
     if out.is_empty() {
         return Err("signature is empty");
     }
+    if out.len() >= 0x10000 {
+        return Err("signature is too large");
+    }
     Ok(out)
 }
 
@@ -118,7 +121,10 @@ async fn scan_signature(
             let read_len = remaining.min(chunk_size);
             let buf_slice = &mut buf[..read_len];
 
-            if process.read_into_buf(base + offset_bytes, buf_slice).is_err() {
+            if process
+                .read_into_buf(base + offset_bytes, buf_slice)
+                .is_err()
+            {
                 break;
             }
 

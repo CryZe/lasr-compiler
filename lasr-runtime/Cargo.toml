@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-asr = { git = "https://github.com/LiveSplit/asr", features = ["alloc"] }
+asr = { git = "https://github.com/LiveSplit/asr", rev = "89d55ab07198da6fd75cab1ea1a6825b4240b343", features = ["alloc"] }
 tsuki = "0.4.7"
 md5 = "0.8"
 

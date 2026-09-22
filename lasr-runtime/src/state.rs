@@ -1,6 +1,7 @@
 use core::error::Error;
 use std::{
     cell::{Cell, RefCell},
+    collections::HashMap,
     string::String,
 };
 
@@ -15,6 +16,16 @@ pub struct State {
     pub maps_cache: RefCell<Option<Vec<MapRange>>>,
     pub maps_cache_cycles: Cell<i64>,
     pub maps_cache_cycles_value: Cell<i64>,
+    pub settings: RefCell<HashMap<String, Setting>>,
+    pub defining_settings: Cell<bool>,
+}
+
+#[derive(Clone)]
+pub enum Setting {
+    Boolean(bool),
+    Integer(i64),
+    Number(f64),
+    String(String),
 }
 
 #[derive(Clone, Copy)]

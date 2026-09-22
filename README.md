@@ -31,10 +31,11 @@ lasr-compiler script.lua [script.wasm]
 
 ## Compatibility
 
-The current compatibility target is LibreSplit commit [eb95cea](https://github.com/LibreSplit/LibreSplit/commit/eb95cea).
+The current compatibility target is LibreSplit commit [469a744](https://github.com/LibreSplit/LibreSplit/commit/469a744d72d6c1f0e98741c084a3b0f64df4785b) and ASR commit [89d55ab](https://github.com/LiveSplit/asr/commit/89d55ab07198da6fd75cab1ea1a6825b4240b343).
 
 Callback lifecycle:
 
+- `define_settings`
 - `startup`
 - `state`
 - `update`
@@ -43,6 +44,11 @@ Callback lifecycle:
 - `isLoading`
 - `reset`
 - `gameTime`
+
+Reactive callbacks supported through ASR timer state and split index changes:
+
+- `onStart`, `onSplit`, `onReset`
+- `onSkip`, `onUnsplit`, `onPause`, `onUnpause`
 
 Lua globals / host functions:
 
@@ -60,6 +66,12 @@ Lua globals / host functions:
 - `str2ida`
 - `shallow_copy_tbl`
 - `md5sum`
+- `settings.define` and `settings.get`
+- `SETTING_BOOLEAN`, `SETTING_INTEGER`, `SETTING_NUMBER`, `SETTING_STRING`
+
+Settings defined in `define_settings` appear in the ASR settings UI. Boolean
+settings use checkboxes; integer, number, and string settings use text fields.
+`settings.get` reads current values and falls back to the script's defaults.
 
 Script settings used by the runtime loop:
 
@@ -80,6 +92,9 @@ Known differences and gaps:
   Runtime does not implement process ID retrieval.
 - `getMaps` currently returns an empty `name` field for each map because the
   Auto Splitting Runtime does not implement map name retrieval.
+- `onStop` and `onCancel` cannot be dispatched because ASR does not distinguish
+  those timer actions. Other reactive callbacks are inferred from timer state
+  and split index changes, so multiple actions between ticks may be combined.
 - The Lua stdlib is not fully supported and may behave differently due to the
   sandboxed environment.
 
@@ -106,4 +121,3 @@ Build runtime only (not usually necessary):
 ```sh
 cargo build -p lasr-runtime --target wasm32-wasip1
 ```
-

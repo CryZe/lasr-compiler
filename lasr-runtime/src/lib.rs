@@ -2,6 +2,7 @@
 
 use std::{
     cell::{Cell, RefCell},
+    collections::HashMap,
     pin::Pin,
     rc::Rc,
 };
@@ -18,15 +19,18 @@ use tsuki::{
     fp,
 };
 
+mod events;
 mod lua_api;
 mod luajit_bitlib;
 mod script;
 mod state;
 mod utils;
 
+use events::TimerSnapshot;
 use lua_api::{
-    cmdline, get_base_address, get_maps, get_module_size, get_pid, md5sum, print, print_tbl,
-    process, read_address, set_variable, shallow_copy_tbl, sig_scan, size_of, str2ida,
+    cmdline, define_setting, get_base_address, get_maps, get_module_size, get_pid, get_setting,
+    md5sum, print, print_tbl, process, read_address, set_variable, shallow_copy_tbl, sig_scan,
+    size_of, str2ida,
 };
 use luajit_bitlib::LuaJitBitLib;
 use script::script_str;
@@ -41,6 +45,7 @@ asr::async_main!(stable);
 #[cfg_attr(not(target_family = "wasm"), unsafe(no_mangle))]
 async fn main() {
     loop {
+        asr::set_tick_rate(60.0);
         let lua = Lua::new(State {
             process: RefCell::new(None),
             base_address: Cell::new(Address::NULL),
@@ -48,6 +53,8 @@ async fn main() {
             maps_cache: RefCell::new(None),
             maps_cache_cycles: Cell::new(1),
             maps_cache_cycles_value: Cell::new(1),
+            settings: RefCell::new(HashMap::new()),
+            defining_settings: Cell::new(false),
         });
 
         lua.use_module(None, true, BaseLib).unwrap();
@@ -80,12 +87,27 @@ async fn main() {
 
         lua.global().set_str_key("setVariable", fp!(set_variable));
 
+        let settings = lua.create_table();
+        settings.set_str_key("define", fp!(define_setting));
+        settings.set_str_key("get", fp!(get_setting));
+        lua.global().set_str_key("settings", settings.clone());
+        lua.global().set_str_key("SETTING_BOOLEAN", 0);
+        lua.global().set_str_key("SETTING_INTEGER", 1);
+        lua.global().set_str_key("SETTING_NUMBER", 2);
+        lua.global().set_str_key("SETTING_STRING", 3);
+
         let td = lua.create_thread();
 
         let chunk = lua.load("script.lua", script_str()).unwrap();
         () = td.async_call(&chunk, ()).await.unwrap();
 
+        lua.associated_data().defining_settings.set(true);
+        call_maybe(&lua, &td, "define_settings").await;
+        lua.associated_data().defining_settings.set(false);
+        settings.set_str_key("define", Value::Nil);
+
         let use_game_time = startup(&lua, &td).await;
+        let mut previous_timer = TimerSnapshot::capture();
 
         while lua
             .associated_data()
@@ -148,6 +170,10 @@ async fn main() {
                     .maps_cache_cycles_value
                     .set(lua.associated_data().maps_cache_cycles.get());
             }
+
+            let next_timer = TimerSnapshot::capture();
+            previous_timer.dispatch(&next_timer, &lua, &td).await;
+            previous_timer = next_timer;
 
             next_tick().await;
         }

@@ -501,6 +501,19 @@ enum SectionItem<'a> {
     Data,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn current_runtime_accepts_injected_script() {
+        let script = b"function define_settings() end\nfunction onStart() end\n";
+        let output = inject_script(LASR_RUNTIME_WASM, script, DEFAULT_EXPORT).unwrap();
+        wasmparser::Validator::new().validate_all(&output).unwrap();
+        assert!(output.windows(script.len()).any(|window| window == script));
+    }
+}
+
 struct MemoryLimits {
     initial: u32,
     maximum: Option<u32>,
